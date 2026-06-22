@@ -10,7 +10,9 @@
     "keygen": "node scripts/generate-keys.mjs",
     "format": "prettier --write .",
     "lint": "eslint .",
-    "check": "prettier --check . && eslint . && tsc",
+    "check": "prettier --check . && eslint . && tsc && tsc -p test/tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prepare": "husky"
   },
   "dependencies": {
@@ -18,12 +20,14 @@
     "jose": "^6.2.3"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.16.18",
     "@cloudflare/workers-types": "^4.20260619.1",
     "eslint": "^10.5.0",
     "husky": "^9.1.7",
     "prettier": "^3.8.4",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.61.1",
+    "vitest": "^4.1.9",
     "wrangler": "^4.103.0"
   }
 }

@@ -11,18 +11,17 @@ updates:
         patterns:
           - "@cloudflare/*"
           - "wrangler"
-          - "workers-ai-provider"
-      ai-sdk:
+      a2a-sdk:
         patterns:
-          - "ai"
-          - "agents"
+          - "@a2a-js/*"
+          - "jose"
       dev-tooling:
         patterns:
           - "eslint"
-          - "@typescript-eslint/*"
           - "typescript-eslint"
           - "prettier"
           - "typescript"
+          - "husky"
           - "@types/*"
 
   - package-ecosystem: "github-actions"
