@@ -123,6 +123,30 @@ describe("verifyGatewayToken — error paths", () => {
     );
   });
 
+  it("rejects a token whose jku origin differs from its iss origin", async () => {
+    // Both origins are in allowedOrigins — this tests the cross-check, not the
+    // allowlist check. GatewayB's JWKS is never fetched because the check fires
+    // before the network call.
+    const GATEWAY_B_ORIGIN = "https://gateway-b.test";
+    const key = await importJWK(TEST_GATEWAY_PRIVATE_JWK, "EdDSA");
+    const token = await new SignJWT({})
+      .setProtectedHeader({
+        alg: "EdDSA",
+        jku: `${GATEWAY_B_ORIGIN}/.well-known/jwks.json`
+      })
+      .setIssuer(GATEWAY_ORIGIN)
+      .setAudience(AGENT_ORIGIN)
+      .setExpirationTime("5m")
+      .sign(key);
+
+    await expect(
+      verifyGatewayToken(token, {
+        allowedOrigins: [GATEWAY_ORIGIN, GATEWAY_B_ORIGIN],
+        audience: AGENT_ORIGIN
+      })
+    ).rejects.toBeInstanceOf(GatewayAuthError);
+  });
+
   it("rejects a token signed by a key not in the gateway JWKS", async () => {
     // jku still points at the trusted gateway origin (passes the origin check),
     // but the token is signed with the agent key — the signature must fail

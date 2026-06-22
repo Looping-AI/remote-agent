@@ -1,5 +1,6 @@
 import {
   createRemoteJWKSet,
+  decodeJwt,
   decodeProtectedHeader,
   jwtVerify,
   type JWTPayload
@@ -94,6 +95,15 @@ export async function verifyGatewayToken(
     if (!opts.allowedOrigins.includes(jkuOrigin)) {
       throw new GatewayAuthError(
         `jku origin '${jkuOrigin}' is not in the allowed gateway origins`
+      );
+    }
+    // Prevent one listed gateway from impersonating another: the origin where
+    // keys are fetched must match the origin that issued the token.
+    const rawIss = decodeJwt(token).iss ?? "";
+    const issOrigin = new URL(rawIss).origin;
+    if (issOrigin !== jkuOrigin) {
+      throw new GatewayAuthError(
+        `jku origin '${jkuOrigin}' does not match iss origin '${issOrigin}'`
       );
     }
     const { payload } = await jwtVerify(token, jwksFor(jku), {
