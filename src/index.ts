@@ -16,19 +16,19 @@ import {
 } from "./verify";
 
 /**
- * Reference remote A2A agent for looping-gateway (Phase 7).
+ * Reference remote A2A agent for looping-gateway.
  *
  * Demonstrates the full zero-trust, no-shared-secrets contract a third-party
  * custom agent must implement:
  *
  *  1. Serve a **signed** AgentCard at `…/.well-known/agent-card.json` so the
- *     gateway can verify+pin the agent's identity at registration ("A knows B").
+ *     gateway can verify+pin the agent's identity at registration ("G knows R").
  *  2. Publish the card-signing **public** JWKS at the card's `jku`.
  *  3. **Verify the gateway's identity JWT** on every JSON-RPC call against the
- *     gateway's public JWKS ("B knows A"), then echo the caller's message.
+ *     gateway's public JWKS ("R knows G"), then echo the caller's message.
  *
  * No secret is ever shared between the gateway and this agent — trust flows
- * entirely through asymmetric (Ed25519) signatures over public JWKS.
+ * entirely on the domains and through asymmetric (Ed25519) signatures over public JWKS.
  */
 
 interface Env {
