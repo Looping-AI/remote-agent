@@ -29,5 +29,11 @@
     "typescript-eslint": "^8.61.1",
     "vitest": "^4.1.9",
     "wrangler": "^4.103.0"
+  },
+  "allowScripts": {
+    "esbuild": false,
+    "fsevents": false,
+    "sharp": false,
+    "workerd": false
   }
 }
