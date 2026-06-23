@@ -1,6 +1,7 @@
 import { FlattenedSign, importJWK, type JWK } from "jose";
 import type { AgentCard } from "@a2a-js/sdk";
 import { canonicalCardPayload } from "./canonical";
+import { manifest } from "../agent/manifest";
 
 /** JWS algorithm for the card signature — must match the gateway (`EdDSA`). */
 const ALG = "EdDSA";
@@ -30,31 +31,16 @@ export interface CardSigningConfig {
  */
 export function buildBaseCard(origin: string): SignedAgentCard {
   return {
-    name: "Example Echo Agent",
-    description:
-      "Reference remote A2A agent for looping-gateway. Verifies the gateway " +
-      "identity JWT and echoes the caller's message.",
+    ...manifest,
     protocolVersion: "0.3.0",
-    version: "0.1.0",
     url: `${origin}${A2A_RPC_PATH}`,
     preferredTransport: "JSONRPC",
-    capabilities: { streaming: false, pushNotifications: false },
-    defaultInputModes: ["text/plain"],
-    defaultOutputModes: ["text/plain"],
     // The gateway authenticates every call with a short-lived EdDSA JWT sent as
     // an HTTP Bearer token; advertise that so the card is self-documenting.
     securitySchemes: {
       gatewayJwt: { type: "http", scheme: "bearer", bearerFormat: "JWT" }
     },
-    security: [{ gatewayJwt: [] }],
-    skills: [
-      {
-        id: "echo",
-        name: "Echo",
-        description: "Echoes the caller's message back, greeting them by name.",
-        tags: ["chat", "echo"]
-      }
-    ]
+    security: [{ gatewayJwt: [] }]
   };
 }
 
@@ -80,6 +66,17 @@ export async function signCard(
     ...card,
     signatures: [{ protected: jws.protected ?? "", signature: jws.signature }]
   };
+}
+
+/**
+ * Parse and validate the `A2A_SIGNING_KEY` env var into the private JWK used to
+ * sign the card. Throws if the JWK is missing its `kid` (required for the JWS
+ * protected header and gateway key-pinning).
+ */
+export function parsePrivateJwk(raw: string): CardSigningConfig["privateJwk"] {
+  const jwk = JSON.parse(raw) as { kid?: string };
+  if (!jwk.kid) throw new Error("A2A_SIGNING_KEY must include a `kid`");
+  return jwk as CardSigningConfig["privateJwk"];
 }
 
 /** Public card-signing JWKS (served at the `jku`): the private JWK minus `d`. */

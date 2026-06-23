@@ -30,10 +30,12 @@ npm run keygen <kid>   # generate an Ed25519 private JWK for A2A_SIGNING_KEY
 
 | Path                                                   | Role                                                                                           |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| [src/index.ts](src/index.ts)                           | Worker entry. Routes JWKS / AgentCard / JSON-RPC; verifies the gateway JWT; `EchoExecutor`.    |
-| [src/card.ts](src/card.ts)                             | Build + EdDSA-sign the AgentCard; derive the public card-signing JWKS.                         |
-| [src/canonical.ts](src/canonical.ts)                   | Canonical-JSON serialization used for the card signature. **Mirrors the gateway — see below.** |
-| [src/verify.ts](src/verify.ts)                         | Verify the inbound gateway identity JWT (sig + `iss` + `aud` + `exp` + `jku` origin).          |
+| [src/index.ts](src/index.ts)                           | Worker entry. Routes JWKS / AgentCard / JSON-RPC; verifies the gateway JWT.                    |
+| [src/agent/executor.ts](src/agent/executor.ts)         | `EchoExecutor` — handles A2A task execution and builds the reply.                              |
+| [src/agent/manifest.ts](src/agent/manifest.ts)         | AgentCard manifest definition.                                                                 |
+| [src/auth/card.ts](src/auth/card.ts)                   | Build + EdDSA-sign the AgentCard; derive the public card-signing JWKS.                         |
+| [src/auth/canonical.ts](src/auth/canonical.ts)         | Canonical-JSON serialization used for the card signature. **Mirrors the gateway — see below.** |
+| [src/auth/verify.ts](src/auth/verify.ts)               | Verify the inbound gateway identity JWT (sig + `iss` + `aud` + `exp` + `jku` origin).          |
 | [scripts/generate-keys.mjs](scripts/generate-keys.mjs) | Ed25519 JWK keypair generator.                                                                 |
 | [test/](test/)                                         | Vitest specs + [test/fixtures.ts](test/fixtures.ts) (fixed test keys, `makeGatewayToken`).     |
 | [wrangler.jsonc](wrangler.jsonc)                       | Worker config + `GATEWAY_ORIGINS` var.                                                         |
@@ -42,11 +44,11 @@ npm run keygen <kid>   # generate an Ed25519 private JWK for A2A_SIGNING_KEY
 
 These are the things that silently break the contract or the trust model. Treat them as invariants.
 
-1. **`src/canonical.ts` must stay byte-for-byte identical to the gateway's** `src/a2a/card-verify.ts` canonicalizer (keys sorted recursively ascending, `JSON.stringify` no whitespace, `signatures` excluded, base64url no padding). The gateway recomputes the signed payload independently; any deviation makes signatures fail to verify. **If you change one, change both.** Don't "improve" the serialization.
+1. **`src/auth/canonical.ts` must stay byte-for-byte identical to the gateway's** `src/a2a/card-verify.ts` canonicalizer (keys sorted recursively ascending, `JSON.stringify` no whitespace, `signatures` excluded, base64url no padding). The gateway recomputes the signed payload independently; any deviation makes signatures fail to verify. **If you change one, change both.** Don't "improve" the serialization.
 
-2. **Algorithm is `EdDSA` (Ed25519) everywhere** — card signing, gateway JWT verification, key generation. Reject/forbid anything else. The constant `ALG = "EdDSA"` appears in `card.ts` and `verify.ts`; keep them in lockstep.
+2. **Algorithm is `EdDSA` (Ed25519) everywhere** — card signing, gateway JWT verification, key generation. Reject/forbid anything else. The constant `ALG = "EdDSA"` appears in `src/auth/card.ts` and `src/auth/verify.ts`; keep them in lockstep.
 
-3. **Never weaken the JWT verification in `verify.ts`.** It enforces, in order: `jku` header present → `jku` origin ∈ `GATEWAY_ORIGINS` → `iss` origin === `jku` origin → `jwtVerify` with `issuer`/`audience`/`algorithms`. The `jku`-origin allowlist and the `iss`===`jku` check prevent key-injection and cross-gateway impersonation. Do not skip a check, widen the allowlist to wildcards, or fetch a `jku` before validating its origin.
+3. **Never weaken the JWT verification in `src/auth/verify.ts`.** It enforces, in order: `jku` header present → `jku` origin ∈ `GATEWAY_ORIGINS` → `iss` origin === `jku` origin → `jwtVerify` with `issuer`/`audience`/`algorithms`. The `jku`-origin allowlist and the `iss`===`jku` check prevent key-injection and cross-gateway impersonation. Do not skip a check, widen the allowlist to wildcards, or fetch a `jku` before validating its origin.
 
 4. **Zero shared secrets.** Only public JWKS cross the boundary. The single private key (`A2A_SIGNING_KEY`) never leaves the Worker; only its public half is served at `/.well-known/jwks.json`. Never log, echo, or commit a private JWK or the `d` field.
 
@@ -64,7 +66,7 @@ These are the things that silently break the contract or the trust model. Treat 
 - Use `@cloudflare/vitest-pool-workers` — specs run inside the Workers runtime. Config: [vitest.config.ts](vitest.config.ts).
 - The suite is **hermetic**: `MockAgent` with `disableNetConnect()` intercepts the gateway JWKS fetch; any unmocked outbound request throws. Don't add real network calls in tests.
 - Test keys and `makeGatewayToken(...)` live in [test/fixtures.ts](test/fixtures.ts). Build gateway tokens through that helper so headers/claims stay consistent.
-- When adding a route or verification branch, cover it with both an accept and a reject case (mirror the existing `verify.spec.ts` / `integration/index.spec.ts` style).
+- When adding a route or verification branch, cover it with both an accept and a reject case (mirror the existing `test/auth/verify.spec.ts` / `test/index.spec.ts` style).
 
 ## Secrets
 

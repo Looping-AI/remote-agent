@@ -2,12 +2,13 @@ import { describe, it, expect } from "vitest";
 import { importJWK, flattenedVerify, base64url } from "jose";
 import {
   buildBaseCard,
+  parsePrivateJwk,
   publicCardJwks,
   signCard,
   A2A_RPC_PATH
-} from "../src/card";
-import { canonicalCardPayload } from "../src/canonical";
-import { TEST_AGENT_PRIVATE_JWK } from "./fixtures";
+} from "@/auth/card";
+import { canonicalCardPayload } from "@/auth/canonical";
+import { TEST_AGENT_PRIVATE_JWK } from "../fixtures";
 
 const ORIGIN = "https://agent.example.com";
 
@@ -15,6 +16,29 @@ const CARD_CFG = {
   privateJwk: TEST_AGENT_PRIVATE_JWK,
   jku: `${ORIGIN}/.well-known/jwks.json`
 };
+
+describe("parsePrivateJwk", () => {
+  it("returns the parsed JWK when kid is present", () => {
+    const jwk = { ...TEST_AGENT_PRIVATE_JWK };
+    const raw = JSON.stringify(jwk);
+    const result = parsePrivateJwk(raw);
+    expect(result.kid).toBe(jwk.kid);
+    expect(result.kty).toBe(jwk.kty);
+  });
+
+  it("throws when kid is missing", () => {
+    const { kid: _kid, ...jwkWithoutKid } = TEST_AGENT_PRIVATE_JWK;
+    void _kid;
+    const raw = JSON.stringify(jwkWithoutKid);
+    expect(() => parsePrivateJwk(raw)).toThrow(
+      "A2A_SIGNING_KEY must include a `kid`"
+    );
+  });
+
+  it("throws on invalid JSON", () => {
+    expect(() => parsePrivateJwk("not-json")).toThrow();
+  });
+});
 
 describe("buildBaseCard", () => {
   it("sets url to origin + A2A_RPC_PATH", () => {

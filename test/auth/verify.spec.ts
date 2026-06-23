@@ -5,14 +5,14 @@ import {
   GatewayAuthError,
   verifyGatewayToken,
   IDENTITY_CLAIM
-} from "../src/verify";
+} from "@/auth/verify";
 import {
   makeGatewayToken,
   GATEWAY_ORIGIN,
   AGENT_ORIGIN,
   TEST_GATEWAY_PRIVATE_JWK,
   TEST_AGENT_PRIVATE_JWK
-} from "./fixtures";
+} from "../fixtures";
 
 // --- bearerToken ---
 
