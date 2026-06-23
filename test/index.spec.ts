@@ -5,7 +5,7 @@ import {
   TEST_AGENT_PRIVATE_JWK,
   GATEWAY_ORIGIN,
   AGENT_ORIGIN
-} from "../fixtures";
+} from "./fixtures";
 
 const TEST_ENV = {
   A2A_SIGNING_KEY: JSON.stringify(TEST_AGENT_PRIVATE_JWK),
