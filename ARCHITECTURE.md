@@ -28,7 +28,7 @@ This agent therefore does three things:
 
 1. **Serves a signed AgentCard** at `/.well-known/agent-card.json`. The card is
    signed with a detached-payload EdDSA flattened JWS over its **canonical JSON**
-   (see [`src/canonical.ts`](src/canonical.ts)). The gateway verifies this and
+   (see [`src/auth/canonical.ts`](src/auth/canonical.ts)). The gateway verifies this and
    pins the signing key's `kid` + `jku` on first registration (Trust-On-First-Use).
 2. **Publishes its card-signing public JWKS** at `/.well-known/jwks.json` (the
    card's `jku`), so the gateway can resolve the signing key.
@@ -51,7 +51,7 @@ The card signature is computed over a deterministic serialization:
 - the `signatures` field excluded,
 - payload bytes = UTF-8, base64url (no padding) for the JWS.
 
-[`src/canonical.ts`](src/canonical.ts) is a byte-for-byte copy of the gateway's
+[`src/auth/canonical.ts`](src/auth/canonical.ts) is a byte-for-byte copy of the gateway's
 [`src/a2a/card-verify.ts`](https://github.com/Looping-AI/looping-gateway/blob/main/src/a2a/card-verify.ts) canonicalizer. **If you change one, change both.**
 
 ## Environment
@@ -63,10 +63,11 @@ The card signature is computed over a deterministic serialization:
 
 ## Files
 
-| File                                                     | Role                                                       |
-| -------------------------------------------------------- | ---------------------------------------------------------- |
-| [`src/index.ts`](src/index.ts)                           | Worker entry: routes card / JWKS / JSON-RPC; verifies JWT. |
-| [`src/card.ts`](src/card.ts)                             | Build + sign the AgentCard; derive public JWKS.            |
-| [`src/canonical.ts`](src/canonical.ts)                   | Canonical JSON contract (mirrors the gateway).             |
-| [`src/verify.ts`](src/verify.ts)                         | Verify the gateway identity JWT.                           |
-| [`scripts/generate-keys.mjs`](scripts/generate-keys.mjs) | Ed25519 JWK keypair generator.                             |
+| File                                                     | Role                                                               |
+| -------------------------------------------------------- | ------------------------------------------------------------------ |
+| [`src/index.ts`](src/index.ts)                           | Worker entry: routes card / JWKS / JSON-RPC; verifies JWT.         |
+| [`src/auth/card.ts`](src/auth/card.ts)                   | Build + sign the AgentCard; derive public JWKS; parse signing key. |
+| [`src/auth/canonical.ts`](src/auth/canonical.ts)         | Canonical JSON contract (mirrors the gateway).                     |
+| [`src/auth/verify.ts`](src/auth/verify.ts)               | Verify the gateway identity JWT.                                   |
+| [`src/agent/executor.ts`](src/agent/executor.ts)         | Agent behavior — the Echo executor (swap this for a real agent).   |
+| [`scripts/generate-keys.mjs`](scripts/generate-keys.mjs) | Ed25519 JWK keypair generator.                                     |

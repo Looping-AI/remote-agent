@@ -1,5 +1,6 @@
 import { defineConfig } from "vitest/config";
 import { cloudflarePool } from "@cloudflare/vitest-pool-workers";
+import { resolve } from "path";
 import { MockAgent } from "undici";
 import {
   GATEWAY_ORIGIN,
@@ -21,6 +22,9 @@ fetchMock
   .persist();
 
 export default defineConfig({
+  resolve: {
+    alias: { "@": resolve(__dirname, "src") }
+  },
   test: {
     pool: cloudflarePool({
       main: "./src/index.ts",

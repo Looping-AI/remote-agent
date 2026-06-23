@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import worker from "../../src/index";
+import worker from "@/index";
 import {
   makeGatewayToken,
   TEST_AGENT_PRIVATE_JWK,

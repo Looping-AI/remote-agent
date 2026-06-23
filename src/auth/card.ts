@@ -82,6 +82,17 @@ export async function signCard(
   };
 }
 
+/**
+ * Parse and validate the `A2A_SIGNING_KEY` env var into the private JWK used to
+ * sign the card. Throws if the JWK is missing its `kid` (required for the JWS
+ * protected header and gateway key-pinning).
+ */
+export function parsePrivateJwk(raw: string): CardSigningConfig["privateJwk"] {
+  const jwk = JSON.parse(raw) as { kid?: string };
+  if (!jwk.kid) throw new Error("A2A_SIGNING_KEY must include a `kid`");
+  return jwk as CardSigningConfig["privateJwk"];
+}
+
 /** Public card-signing JWKS (served at the `jku`): the private JWK minus `d`. */
 export function publicCardJwks(privateJwk: JWK & { kid: string }): {
   keys: JWK[];

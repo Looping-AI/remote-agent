@@ -3,7 +3,7 @@ import {
   sortKeys,
   canonicalCardPayload,
   base64UrlOfString
-} from "../src/canonical";
+} from "@/auth/canonical";
 
 describe("sortKeys", () => {
   it("sorts flat object keys alphabetically", () => {

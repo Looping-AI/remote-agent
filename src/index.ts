@@ -1,19 +1,22 @@
-import { AGENT_CARD_PATH, type Message, type Part } from "@a2a-js/sdk";
+import { AGENT_CARD_PATH } from "@a2a-js/sdk";
 import {
   DefaultRequestHandler,
   InMemoryTaskStore,
-  JsonRpcTransportHandler,
-  type AgentExecutor,
-  type ExecutionEventBus,
-  type RequestContext
+  JsonRpcTransportHandler
 } from "@a2a-js/sdk/server";
-import { buildBaseCard, publicCardJwks, signCard } from "./card";
+import {
+  buildBaseCard,
+  parsePrivateJwk,
+  publicCardJwks,
+  signCard
+} from "./auth/card";
 import {
   GatewayAuthError,
   bearerToken,
   verifyGatewayToken,
   type GatewayIdentity
-} from "./verify";
+} from "./auth/verify";
+import { EchoExecutor } from "./agent/executor";
 
 /**
  * Reference remote A2A agent for looping-gateway.
@@ -41,57 +44,11 @@ interface Env {
 /** Path serving this agent's card-signing public JWKS (the card's `jku`). */
 const JWKS_PATH = "/.well-known/jwks.json";
 
-/** Concatenate the text parts of an inbound A2A message. */
-function textOf(message: Message): string {
-  return (message.parts ?? [])
-    .filter(
-      (p: Part): p is Extract<Part, { kind: "text" }> => p.kind === "text"
-    )
-    .map((p) => p.text)
-    .join("")
-    .trim();
-}
-
-/** Echo executor that greets the verified caller by name (from the JWT claims). */
-class EchoExecutor implements AgentExecutor {
-  constructor(private readonly identity: GatewayIdentity) {}
-
-  execute = async (
-    ctx: RequestContext,
-    bus: ExecutionEventBus
-  ): Promise<void> => {
-    const said = textOf(ctx.userMessage);
-    const who =
-      this.identity.displayName ||
-      this.identity.slackUserId ||
-      "unknown caller";
-    const reply: Message = {
-      kind: "message",
-      messageId: crypto.randomUUID(),
-      role: "agent",
-      parts: [{ kind: "text", text: `Hello ${who}, you said: ${said}` }],
-      contextId: ctx.contextId
-    };
-    bus.publish(reply);
-    bus.finished();
-  };
-
-  cancelTask = async (): Promise<void> => {};
-}
-
 function unauthorized(reason: string): Response {
   return new Response(`unauthorized: ${reason}`, {
     status: 401,
     headers: { "www-authenticate": 'Bearer error="invalid_token"' }
   });
-}
-
-function parsePrivateJwk(
-  raw: string
-): Parameters<typeof signCard>[1]["privateJwk"] {
-  const jwk = JSON.parse(raw) as { kid?: string };
-  if (!jwk.kid) throw new Error("A2A_SIGNING_KEY must include a `kid`");
-  return jwk as Parameters<typeof signCard>[1]["privateJwk"];
 }
 
 export default {
