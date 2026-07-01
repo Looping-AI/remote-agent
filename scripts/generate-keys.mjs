@@ -18,4 +18,4 @@ const value = JSON.stringify(priv);
 console.log("\n── Local dev (.dev.vars) ───────────────────────────────────");
 console.log(`A2A_SIGNING_KEY=${value}`);
 console.log("\n── Deployed worker (wrangler secret) ───────────────────────");
-console.log(`echo '${value}' | wrangler secret put A2A_SIGNING_KEY`);
+console.log(`echo '${value}' | npx wrangler secret put A2A_SIGNING_KEY`);
