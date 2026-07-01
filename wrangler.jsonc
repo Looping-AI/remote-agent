@@ -11,8 +11,8 @@
   "observability": {
     "enabled": true
   },
-  // Non-secret config. Point this at your deployed gateway.
-  "vars": {
-    "GATEWAY_ORIGINS": "[\"https://your-gateway.example.com\"]"
+  // Workers AI binding backing the agent's LLM tool loop (via AI Gateway).
+  "ai": {
+    "binding": "AI"
   }
 }
