@@ -31,7 +31,7 @@ npm run keygen <kid>   # generate an Ed25519 private JWK for A2A_SIGNING_KEY
 | Path                                                   | Role                                                                                           |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
 | [src/index.ts](src/index.ts)                           | Worker entry. Routes JWKS / AgentCard / JSON-RPC; verifies the gateway JWT.                    |
-| [src/env.ts](src/env.ts)                               | `Env` interface (bindings + vars): `A2A_SIGNING_KEY`, `GATEWAY_ORIGINS`, `AI`.                 |
+| [src/env.ts](src/env.ts)                               | `Env` interface (bindings + secrets): `A2A_SIGNING_KEY`, `GATEWAY_ORIGINS`, `AI`.              |
 | [src/agent/executor.ts](src/agent/executor.ts)         | `LlmExecutor` — wires the model pair, prompt, and tools into the turn loop.                    |
 | [src/agent/loop.ts](src/agent/loop.ts)                 | Stateless turn runner: `generateText` loop, primary → fallback, transient handling.            |
 | [src/agent/model.ts](src/agent/model.ts)               | Workers-AI primary/fallback model pair (via AI Gateway); `ModelOverrides` test hook.           |
@@ -45,7 +45,7 @@ npm run keygen <kid>   # generate an Ed25519 private JWK for A2A_SIGNING_KEY
 | [src/auth/verify.ts](src/auth/verify.ts)               | Verify the inbound gateway identity JWT (sig + `iss` + `aud` + `exp` + `jku` origin).          |
 | [scripts/generate-keys.mjs](scripts/generate-keys.mjs) | Ed25519 JWK keypair generator.                                                                 |
 | [test/](test/)                                         | Vitest specs + [test/fixtures.ts](test/fixtures.ts) (fixed test keys, `makeGatewayToken`).     |
-| [wrangler.jsonc](wrangler.jsonc)                       | Worker config: `AI` binding + `GATEWAY_ORIGINS` var.                                           |
+| [wrangler.jsonc](wrangler.jsonc)                       | Worker config: `AI` binding. Secrets (`A2A_SIGNING_KEY`, `GATEWAY_ORIGINS`) live outside it.   |
 
 ## Non-negotiable constraints
 
@@ -59,14 +59,14 @@ These are the things that silently break the contract or the trust model. Treat 
 
 4. **Zero shared secrets.** Only public JWKS cross the boundary. The single private key (`A2A_SIGNING_KEY`) never leaves the Worker; only its public half is served at `/.well-known/jwks.json`. Never log, echo, or commit a private JWK or the `d` field.
 
-5. **`GATEWAY_ORIGINS` (Worker var) must match the deployed gateway's `GATEWAY_ORIGIN`.** It's a JSON array string, e.g. `["https://gw.example.com"]`. It validates both the JWT `jku` and `iss`.
+5. **`GATEWAY_ORIGINS` (Worker secret) must match the deployed gateway's `GATEWAY_ORIGIN`.** It's a JSON array string, e.g. `["https://gw.example.com"]`. It validates both the JWT `jku` and `iss`.
 
 ## Runtime & style
 
 - **Cloudflare Workers runtime**, not Node. `nodejs_compat` is on, but prefer Web APIs (`crypto`, `fetch`, `Response.json`, `TextEncoder`). Crypto goes through [`jose`](https://github.com/panva/jose).
 - TypeScript is `strict`. ESLint forbids `@typescript-eslint/no-explicit-any` and `@typescript-eslint/no-deprecated` (both `error`). Prefix intentionally-unused vars with `_`.
 - Prettier with `trailingComma: "none"`. Run `npm run format`; don't hand-format.
-- Module entry is `satisfies ExportedHandler<Env>`; bindings are typed via the `Env` interface in [src/env.ts](src/env.ts) (mirrored by `wrangler.jsonc` bindings/vars).
+- Module entry is `satisfies ExportedHandler<Env>`; bindings are typed via the `Env` interface in [src/env.ts](src/env.ts) (the `AI` binding is mirrored by `wrangler.jsonc`; secrets are not).
 
 ## Tests
 
@@ -81,6 +81,7 @@ These are the things that silently break the contract or the trust model. Treat 
 ## Secrets
 
 - `A2A_SIGNING_KEY` — Ed25519 private JWK (must include `kid`). Locally in `.dev.vars` (gitignored; see [.dev.vars.example](.dev.vars.example)); in prod via `wrangler secret put A2A_SIGNING_KEY`. Generate with `npm run keygen <kid>`. Never commit it.
+- `GATEWAY_ORIGINS` — JSON array of trusted gateway origins, e.g. `["https://gw.example.com"]`. Not sensitive, but kept in `.dev.vars` locally and `wrangler secret put GATEWAY_ORIGINS` in prod (rather than `wrangler.jsonc` vars) so it can be changed per-deploy without a code change.
 
 ## Note on `.agents/skills/`
 

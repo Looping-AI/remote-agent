@@ -87,7 +87,7 @@ The card signature is computed over a deterministic serialization:
 | Variable          | Where   | Purpose                                                                                              |
 | ----------------- | ------- | ---------------------------------------------------------------------------------------------------- |
 | `A2A_SIGNING_KEY` | secret  | Ed25519 private JWK (with `kid`) that signs the AgentCard.                                           |
-| `GATEWAY_ORIGINS` | var     | JSON array of trusted gateway origins, e.g. `["https://gw.example.com"]`. Validates `jku` and `iss`. |
+| `GATEWAY_ORIGINS` | secret  | JSON array of trusted gateway origins, e.g. `["https://gw.example.com"]`. Validates `jku` and `iss`. |
 | `AI`              | binding | Workers AI binding (routed via AI Gateway) backing the LLM tool loop.                                |
 
 ## Files

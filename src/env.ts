@@ -1,5 +1,5 @@
 /**
- * The Worker's environment: bindings + non-secret vars. Shared by the entrypoint
+ * The Worker's environment: bindings + secrets. Shared by the entrypoint
  * ({@link file://./index.ts}) and the agent runtime (model pair, executor) so the
  * `AI` binding is typed in one place.
  */
